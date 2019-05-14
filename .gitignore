@@ -1,0 +1,11 @@
+.waf-1*
+.waf3-1*
+.waf-2*
+.waf3-2*
+.DS*
+.lock*
+build/
+*.pyc
+results/*
+results_*/
+.vscode/
