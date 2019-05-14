@@ -46,7 +46,7 @@ main(int argc, char* argv[])
 
   // Default params
   int node_num = 20;
-  int range = 40;
+  int range = 60;
   int sim_time = 2400;
 
   // Wifi

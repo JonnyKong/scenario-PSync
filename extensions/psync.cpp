@@ -117,10 +117,6 @@ PSync::sendDataInterest(const Name& data_name)
                               now, "NACK"), // Nack
                          bind(&PSync::onDataTimeout, this, _1, nRetries,
                               now, "TIMEOUT"));
-  // m_face.expressInterest(interest,
-  //                        [](const Interest& interest, const Data& data){},
-  //                        [](const Interest& interest, const lp::Nack& nack){},
-  //                        [](const Interest& interest){});
 }
 
 void
@@ -171,7 +167,6 @@ void
 PSync::onDataTimeout(const Interest& interest, int nRetries,
                      int64_t last, const std::string& reason)
 {
-  return;
   int64_t now = ns3::Simulator::Now().GetMicroSeconds();
   if (nRetries <= 0)
     return;
