@@ -1,0 +1,137 @@
+diff --git a/NFD b/NFD
+--- a/NFD
++++ b/NFD
+@@ -1 +1 @@
+-Subproject commit 49f22b05e1a57b0a88d90cc0111f9a1d7a5cbd21
++Subproject commit 49f22b05e1a57b0a88d90cc0111f9a1d7a5cbd21-dirty
+diff --git a/helper/ndn-fib-helper.cpp b/helper/ndn-fib-helper.cpp
+index 921c20f..26263fe 100644
+--- a/helper/ndn-fib-helper.cpp
++++ b/helper/ndn-fib-helper.cpp
+@@ -169,6 +169,24 @@ FibHelper::AddRoute(const std::string& nodeName, const Name& prefix,
+   AddRoute(node, prefix, otherNode, metric);
+ }
+ 
++// Add all of the net-devices to specific prefix
++void
++FibHelper::AddRoute(Ptr<Node> node, const Name& prefix, int32_t metric)
++{
++  for (uint32_t deviceId = 0; deviceId < node->GetNDevices(); deviceId++) {
++    Ptr<NetDevice> device = node->GetDevice(deviceId);
++    Ptr<L3Protocol> ndn = node->GetObject<L3Protocol>();
++    NS_ASSERT_MSG(ndn != 0, "Ndn stack should be installed on the node");
++
++    shared_ptr<Face> face = ndn->getFaceByNetDevice(device);
++    NS_ASSERT_MSG(face != 0, "There is no face associated with the net-device");
++
++    // std::cout << "*****************face id = " << face->getId() << std::endl;
++    // std::cout << "*****************face info: " << *face << std::endl;
++    AddRoute(node, prefix, face, metric);
++  }
++}
++
+ void
+ FibHelper::RemoveRoute(Ptr<Node> node, const Name& prefix, shared_ptr<Face> face)
+ {
+diff --git a/helper/ndn-fib-helper.hpp b/helper/ndn-fib-helper.hpp
+index 381ee2d..877456c 100644
+--- a/helper/ndn-fib-helper.hpp
++++ b/helper/ndn-fib-helper.hpp
+@@ -101,6 +101,16 @@ public:
+            int32_t metric);
+ 
+   /**
++   * @brief Add forwarding entry to FIB (add all of the net devices)
++   *
++   * \param nodeName Node name (refer to ns3::Names)
++   * \param prefix Routing prefix
++   * \param metric Routing metric
++   */
++  static void
++  AddRoute(Ptr<Node> node, const Name& prefix, int32_t metric);
++
++  /**
+    * \brief remove forwarding entry in FIB
+    *
+    * \param node Node
+diff --git a/helper/ndn-stack-helper.cpp b/helper/ndn-stack-helper.cpp
+index 863b191..978e983 100644
+--- a/helper/ndn-stack-helper.cpp
++++ b/helper/ndn-stack-helper.cpp
+@@ -76,6 +76,29 @@ StackHelper::~StackHelper()
+ {
+ }
+ 
++void
++StackHelper::setNodeID(uint64_t nodeID, Ptr<Node> node)
++{
++  Ptr<L3Protocol> l3Protocol = node->GetObject<L3Protocol>();
++  NS_ASSERT(l3Protocol != nullptr);
++  NS_ASSERT(l3Protocol->getForwarder() != nullptr);
++
++  nfd::Forwarder& forwarder = *l3Protocol->getForwarder();
++  forwarder.setNodeID(nodeID);
++}
++
++void
++StackHelper::setLossRate(double lossRate, Ptr<Node> node)
++{
++
++  Ptr<L3Protocol> l3Protocol = node->GetObject<L3Protocol>();
++  NS_ASSERT(l3Protocol != nullptr);
++  NS_ASSERT(l3Protocol->getForwarder() != nullptr);
++
++  nfd::Forwarder& forwarder = *l3Protocol->getForwarder();
++  forwarder.setLossRate(lossRate);
++}
++
+ KeyChain&
+ StackHelper::getKeyChain()
+ {
+diff --git a/helper/ndn-stack-helper.hpp b/helper/ndn-stack-helper.hpp
+index 1237a15..4d92803 100644
+--- a/helper/ndn-stack-helper.hpp
++++ b/helper/ndn-stack-helper.hpp
+@@ -64,6 +64,12 @@ public:
+    */
+   virtual ~StackHelper();
+ 
++  static void
++  setNodeID(uint64_t nodeID, Ptr<Node> node);
++
++  static void
++  setLossRate(double lossRate, Ptr<Node> node);
++
+   /**
+    * @brief Set parameters of NdnL3Protocol
+    */
+diff --git a/ndn-cxx b/ndn-cxx
+--- a/ndn-cxx
++++ b/ndn-cxx
+@@ -1 +1 @@
+-Subproject commit 4e372702cfd09f76d5fa4ea1aea5b9152fc60c43
++Subproject commit 4e372702cfd09f76d5fa4ea1aea5b9152fc60c43-dirty
+diff --git a/utils/topology/rocketfuel-map-reader.hpp b/utils/topology/rocketfuel-map-reader.hpp
+index 1c089f0..64428d7 100644
+--- a/utils/topology/rocketfuel-map-reader.hpp
++++ b/utils/topology/rocketfuel-map-reader.hpp
+@@ -181,6 +181,6 @@ private:
+   assignGw(Traits::vertex_descriptor vertex, uint32_t degree, node_type_t nodeType);
+ }; // end class RocketfuelMapReader
+ 
+-}; // end namespace ns3
++}  // end namespace ns3
+ 
+ #endif /* ROCKETFUEL_MAP_READER_H */
+diff --git a/utils/topology/rocketfuel-weights-reader.hpp b/utils/topology/rocketfuel-weights-reader.hpp
+index 19da2e7..041bf7e 100644
+--- a/utils/topology/rocketfuel-weights-reader.hpp
++++ b/utils/topology/rocketfuel-weights-reader.hpp
+@@ -110,6 +110,6 @@ RocketfuelWeightsReader::GetDefaultQueue() const
+   return m_queue;
+ }
+ 
+-}; // end namespace ns3
++}  // end namespace ns3
+ 
+ #endif /* ROCKETFUEL_TOPOLOGY_WEIGHTS_READER_H */

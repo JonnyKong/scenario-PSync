@@ -1,0 +1,14 @@
+diff --git a/ndn-cxx/util/segment-fetcher.cpp b/ndn-cxx/util/segment-fetcher.cpp
+index 18c4eaf..ab0428f 100644
+--- a/ndn-cxx/util/segment-fetcher.cpp
++++ b/ndn-cxx/util/segment-fetcher.cpp
+@@ -371,6 +371,9 @@ void
+ SegmentFetcher::afterTimeoutCb(const Interest& origInterest,
+                                const weak_ptr<SegmentFetcher>& weakSelf)
+ {
++  // For ad-hoc simulation: Should let application make retx decision
++  return;
++
+   if (shouldStop(weakSelf))
+     return;
+ 

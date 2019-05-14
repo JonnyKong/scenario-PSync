@@ -129,13 +129,10 @@ class GccBasicFlags(CompilerFlags):
     def getGeneralFlags(self, conf):
         flags = super(GccBasicFlags, self).getGeneralFlags(conf)
         flags['CXXFLAGS'] += ['-std=c++14']
-        flags['CXXFLAGS'] += ['-pg']
         if Utils.unversioned_sys_platform() == 'linux':
             flags['LINKFLAGS'] += ['-fuse-ld=gold']
-            flags['LINKFLAGS'] += ['-pg']
         elif Utils.unversioned_sys_platform() == 'freebsd':
             flags['LINKFLAGS'] += ['-fuse-ld=lld']
-            flags['LINKFLAGS'] += ['-pg']
         return flags
 
     def getDebugFlags(self, conf):
@@ -153,8 +150,6 @@ class GccBasicFlags(CompilerFlags):
                               '-Wno-unused-parameter',
                               ]
         flags['LINKFLAGS'] += ['-Wl,-O1']
-        flags['LINKFLAGS'] += ['-pg']
-        flags['CXXFLAGS'] += ['-pg']
         return flags
 
     def getOptimizedFlags(self, conf):
@@ -168,8 +163,6 @@ class GccBasicFlags(CompilerFlags):
                               '-Wno-unused-parameter',
                               ]
         flags['LINKFLAGS'] += ['-Wl,-O1']
-        flags['LINKFLAGS'] += ['-pg']
-        flags['CXXFLAGS'] += ['-pg']
         return flags
 
 class GccFlags(GccBasicFlags):

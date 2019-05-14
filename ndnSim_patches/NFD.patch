@@ -1,0 +1,148 @@
+diff --git a/daemon/fw/forwarder.cpp b/daemon/fw/forwarder.cpp
+index c4b6f1d..90b893c 100644
+--- a/daemon/fw/forwarder.cpp
++++ b/daemon/fw/forwarder.cpp
+@@ -34,9 +34,20 @@
+ #include <ndn-cxx/lp/tags.hpp>
+ 
+ #include "face/null-face.hpp"
++#include "core/random.hpp"
+ 
+ namespace nfd {
+ 
++static const Name syncPrefix = Name("/psyncState");
++static const Name dataPrefix = Name("/psyncData");
++
++static inline double
++getRandomNumber(double start, double end)
++{
++  std::uniform_real_distribution<double> dist(start, end);
++  return dist(getGlobalRng());
++}
++
+ NFD_LOG_INIT(Forwarder);
+ 
+ static Name
+@@ -79,6 +90,12 @@ Forwarder::Forwarder()
+   });
+ 
+   m_strategyChoice.setDefaultStrategy(getDefaultStrategyName());
++
++  m_loss_rate = 0.0;
++  m_outNotifyInterest = 0;
++  m_outAck = 0;
++  m_outDataInterest = 0;
++  m_outData = 0;
+ }
+ 
+ Forwarder::~Forwarder() = default;
+@@ -92,6 +109,15 @@ Forwarder::onIncomingInterest(Face& inFace, const Interest& interest)
+   interest.setTag(make_shared<lp::IncomingFaceIdTag>(inFace.getId()));
+   ++m_counters.nInInterests;
+ 
++  // print packet count
++  const Name getSyncTraffic = Name("/ndn/getNDNTraffic");
++  if (interest.getName().compare(0, 2, getSyncTraffic) == 0) {
++    std::cout << "NFD: m_outNotifyInterest = " << m_outNotifyInterest << std::endl;
++    std::cout << "NFD: m_outAck = " << m_outAck << std::endl;
++    std::cout << "NFD: m_outDataInterest = " << m_outDataInterest << std::endl;
++    std::cout << "NFD: m_outData = " << m_outData << std::endl;
++  }
++
+   // /localhost scope control
+   bool isViolatingLocalhost = inFace.getScope() == ndn::nfd::FACE_SCOPE_NON_LOCAL &&
+                               scope_prefix::LOCALHOST.isPrefixOf(interest.getName());
+@@ -250,7 +276,27 @@ Forwarder::onOutgoingInterest(const shared_ptr<pit::Entry>& pitEntry, Face& outF
+                 " interest=" << pitEntry->getName());
+ 
+   // insert out-record
+-  pitEntry->insertOrUpdateOutRecord(outFace, interest);
++  pitEntry->insertOrUpdateOutRecord(outFace, interest); 
++  
++  // Simulate packet loss at sender side
++  if (interest.getName().compare(0, 1, syncPrefix) == 0 ||
++      interest.getName().compare(0, 1, dataPrefix) == 0) {
++    if (m_loss_rate != 0.0) {
++      uint64_t number = getRandomNumber(0, 100);
++      double bound = m_loss_rate * 100;
++      if (number >= 0 && number < bound) {
++        return;
++      }
++    }
++  }
++
++  // Traffic manager
++  if (outFace.getScope() == ndn::nfd::FACE_SCOPE_NON_LOCAL) {
++    if (interest.getName().compare(0, 1, syncPrefix) == 0)
++      m_outNotifyInterest++;
++    else if (interest.getName().compare(0, 1, dataPrefix) == 0)
++      m_outDataInterest++;
++  }
+ 
+   // send Interest
+   outFace.sendInterest(interest);
+@@ -427,7 +473,25 @@ Forwarder::onOutgoingData(const Data& data, Face& outFace)
+     return;
+   }
+ 
+-  // TODO traffic manager
++  // Traffic manager
++  if (outFace.getScope() == ndn::nfd::FACE_SCOPE_NON_LOCAL) {
++    if (data.getName().compare(0, 1, syncPrefix) == 0)
++      m_outAck++;
++    else if (data.getName().compare(0, 1, dataPrefix) == 0)
++      m_outData++;
++  }
++  
++  // Simulate packet loss at sender side
++  if (data.getName().compare(0, 1, syncPrefix) == 0 ||
++      data.getName().compare(0, 1, dataPrefix) == 0) {
++    if (m_loss_rate != 0.0) {
++      uint64_t number = getRandomNumber(0, 100);
++      double bound = m_loss_rate * 100;
++      if (number >= 0 && number < bound) {
++        return;
++      }
++    }
++  }
+ 
+   // send Data
+   outFace.sendData(data);
+diff --git a/daemon/fw/forwarder.hpp b/daemon/fw/forwarder.hpp
+index c873107..ae713d7 100644
+--- a/daemon/fw/forwarder.hpp
++++ b/daemon/fw/forwarder.hpp
+@@ -191,6 +191,19 @@ public: // allow enabling ndnSIM content store (will be removed in the future)
+     m_csFromNdnSim = cs;
+   }
+ 
++  void
++  setNodeID(int nid)
++  {
++    m_nid = nid;
++  }
++
++
++  void
++  setLossRate(double loss_rate) {
++    std::cout << "set m_loss_rate as " << loss_rate << std::endl;
++    m_loss_rate = loss_rate;
++  }
++
+ public:
+   /** \brief trigger before PIT entry is satisfied
+    *  \sa Strategy::beforeSatisfyInterest
+@@ -305,6 +318,13 @@ private:
+   NetworkRegionTable m_networkRegionTable;
+   shared_ptr<Face>   m_csFace;
+ 
++  int                m_nid;
++  double             m_loss_rate;
++  uint64_t           m_outNotifyInterest;
++  uint64_t           m_outAck;
++  uint64_t           m_outDataInterest;
++  uint64_t           m_outData;
++
+   ns3::Ptr<ns3::ndn::ContentStore> m_csFromNdnSim;
+ 
+   // allow Strategy (base class) to enter pipelines
