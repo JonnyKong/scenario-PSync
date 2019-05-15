@@ -42,10 +42,9 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
 {
-  int jitter = m_syncInterestLifetime.count() * .20;
-  m_jitter = std::uniform_int_distribution<>(-jitter, jitter);
-  // int jitter = m_syncInterestLifetime.count() * .10;
-  // m_jitter = std::uniform_int_distribution<>(0, jitter);
+  // int jitter = m_syncInterestLifetime.count() * .20;
+  // m_jitter = std::uniform_int_distribution<>(-jitter, jitter);
+  m_jitter = std::uniform_int_distribution<>(100, 500);
 
   m_registeredPrefix = m_face.setInterestFilter(
                          ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
