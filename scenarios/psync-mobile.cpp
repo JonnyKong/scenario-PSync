@@ -25,6 +25,7 @@
 #include "ns3/ndnSIM-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
+
 #include <cstdio>
 
 namespace ns3 {
@@ -45,8 +46,8 @@ main(int argc, char* argv[])
   cmd.Parse(argc, argv);
 
   // Default params
-  int node_num = 20;
-  int range = 60;
+  int node_num = 30;
+  int range = 20;
   int sim_time = 2400;
 
   // Wifi
@@ -97,13 +98,19 @@ main(int argc, char* argv[])
     Vector pos = position->GetPosition();
     std::cout << "node " << idx << " x position: " << pos.x << " " << pos.y << std::endl;
 
-    AppHelper syncAppHelper("PSyncApp");
-    syncAppHelper.SetAttribute("NodeID", UintegerValue(idx));
-    syncAppHelper.SetAttribute("SyncPrefix", StringValue("/psyncState"));
-    syncAppHelper.SetAttribute("DataPrefix", StringValue("/psyncData"));
-    syncAppHelper.SetAttribute("UserPrefix", StringValue(std::string("/peer") + std::to_string(idx)));
-    syncAppHelper.SetAttribute("DataGenerationDuration", IntegerValue(800));
-    syncAppHelper.Install(object).Start(Seconds(2));
+    if (idx < 20) {
+      AppHelper syncAppHelper("PSyncApp");
+      syncAppHelper.SetAttribute("NodeID", UintegerValue(idx));
+      syncAppHelper.SetAttribute("SyncPrefix", StringValue("/psyncState"));
+      syncAppHelper.SetAttribute("DataPrefix", StringValue("/psyncData"));
+      syncAppHelper.SetAttribute("UserPrefix", StringValue(std::string("/peer") + std::to_string(idx)));
+      syncAppHelper.SetAttribute("DataGenerationDuration", IntegerValue(800));
+      syncAppHelper.Install(object).Start(Seconds(2));
+    } else {
+      AppHelper pureForwarderAppHelper("PureForwarderApp");
+      pureForwarderAppHelper.SetAttribute("NodeID", UintegerValue(idx));
+      pureForwarderAppHelper.Install(object).Start(Seconds(2));
+    }
 
     // TODO: Set loss rate
     StackHelper::setLossRate(loss_rate, object);
