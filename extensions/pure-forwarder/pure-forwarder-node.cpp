@@ -26,7 +26,7 @@ namespace ndn {
 PureForwarderNode::PureForwarderNode(uint64_t nid)
   : m_nid(nid)
   , m_scheduler(m_face.getIoService())
-  , m_forward_prob(100)
+  , m_forward_prob(50)
   , m_random_generator(nid)
   , m_collision_random(m_random_generator, boost::uniform_int<>(0, 100000))
   , m_forward_rand(m_random_generator, boost::uniform_int<>(0, 100))
@@ -36,10 +36,10 @@ PureForwarderNode::PureForwarderNode(uint64_t nid)
 void
 PureForwarderNode::Start()
 {
-  m_face.setInterestFilter(Name("/ndn/syncNotify"),
+  m_face.setInterestFilter(Name("/psyncState"),
                            std::bind(&PureForwarderNode::onInterest, this, _2),
                            [this](const Name&, const std::string& reason) {});
-  m_face.setInterestFilter(Name("/ndn/vsyncData"),
+  m_face.setInterestFilter(Name("/psyncData"),
                            std::bind(&PureForwarderNode::onInterest, this, _2),
                            [this](const Name&, const std::string& reason) {});
 }
