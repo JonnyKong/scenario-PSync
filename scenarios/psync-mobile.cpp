@@ -112,7 +112,6 @@ main(int argc, char* argv[])
       pureForwarderAppHelper.Install(object).Start(Seconds(2));
     }
 
-    // TODO: Set loss rate
     StackHelper::setLossRate(loss_rate, object);
     StackHelper::setNodeID(idx, object);
 
